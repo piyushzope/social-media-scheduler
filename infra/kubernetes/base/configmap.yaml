@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: social-scheduler-config
+  namespace: social-scheduler
+data:
+  NODE_ENV: "production"
+  API_PORT: "4000"
+  WEB_PORT: "3000"
+  SCHEDULER_PORT: "4001"

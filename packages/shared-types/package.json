@@ -1,0 +1,16 @@
+{
+  "name": "@social/shared-types",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@social/config-eslint": "workspace:*",
+    "@social/config-typescript": "workspace:*",
+    "typescript": "^5.3.0"
+  }
+}

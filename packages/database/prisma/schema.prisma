@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== Users & Workspaces ==============
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatarUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaces    WorkspaceMembership[]
+  createdPosts  Post[]               @relation("PostCreator")
+  approvals     ApprovalStep[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+}
+
+model Workspace {
+  id      String @id @default(cuid())
+  name    String
+  slug    String @unique
+  ownerId String
+  tier    WorkspaceTier @default(FREE)
+
+  // Settings stored as JSON
+  settings Json @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members          WorkspaceMembership[]
+  roles            Role[]
+  platformAccounts PlatformAccount[]
+  posts            Post[]
+  blogSources      BlogSource[]
+  auditLogs        AuditLog[]
+
+  @@index([slug])
+  @@index([ownerId])
+}
+
+enum WorkspaceTier {
+  FREE
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+model WorkspaceMembership {
+  workspaceId String
+  userId      String
+  roleId      String
+  joinedAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id])
+
+  @@id([workspaceId, userId])
+  @@index([userId])
+}
+
+model Role {
+  id          String  @id @default(cuid())
+  workspaceId String
+  name        String
+  isDefault   Boolean @default(false)
+  permissions String[] // Array of permission strings
+
+  workspace   Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  memberships WorkspaceMembership[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+// ============== Platform Accounts ==============
+
+model PlatformAccount {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  platform          Platform
+  platformAccountId String
+  platformUsername  String
+  accessToken       String   // Encrypted
+  refreshToken      String?  // Encrypted
+  tokenExpiresAt    DateTime?
+  timezone          String   @default("UTC")
+  isActive          Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace     Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  postPlatforms PostPlatformConfig[]
+  analytics     AnalyticsSnapshot[]
+
+  @@unique([workspaceId, platform, platformAccountId])
+  @@index([workspaceId])
+  @@index([platform])
+}
+
+enum Platform {
+  META
+  X
+  LINKEDIN
+  TIKTOK
+}
+
+// ============== Posts ==============
+
+model Post {
+  id          String     @id @default(cuid())
+  workspaceId String
+  createdById String
+  title       String?
+  content     String
+  mediaUrls   String[]
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  status      PostStatus @default(DRAFT)
+  sourceUrl   String?    // If from blog monitoring
+  aiGenerated Boolean    @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace     Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy     User                 @relation("PostCreator", fields: [createdById], references: [id])
+  platforms     PostPlatformConfig[]
+  approvalSteps ApprovalStep[]
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([createdById])
+}
+
+enum PostStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+model PostPlatformConfig {
+  id              String     @id @default(cuid())
+  postId          String
+  accountId       String
+  platform        Platform
+  content         String?    // Platform-specific override
+  mediaUrls       String[]   // Platform-specific media
+  hashtags        String[]
+  publishedPostId String?
+  publishedAt     DateTime?
+  status          PostStatus @default(DRAFT)
+  failureReason   String?
+
+  post    Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  account PlatformAccount @relation(fields: [accountId], references: [id])
+
+  @@index([postId])
+  @@index([accountId])
+  @@index([status])
+}
+
+model ApprovalStep {
+  id          String         @id @default(cuid())
+  postId      String
+  order       Int
+  approverId  String
+  delegatedTo String?
+  status      ApprovalStatus @default(PENDING)
+  comment     String?
+  decidedAt   DateTime?
+
+  post     Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  approver User @relation(fields: [approverId], references: [id])
+
+  @@unique([postId, order])
+  @@index([postId])
+  @@index([approverId])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============== Blog Monitoring ==============
+
+model BlogSource {
+  id           String          @id @default(cuid())
+  workspaceId  String
+  url          String
+  feedUrl      String?         // RSS feed URL
+  webhookUrl   String?         // Webhook endpoint
+  detectionMethod DetectionMethod @default(RSS)
+  isActive     Boolean         @default(true)
+  lastCheckedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, url])
+  @@index([workspaceId])
+}
+
+enum DetectionMethod {
+  RSS
+  WEBHOOK
+}
+
+// ============== Analytics ==============
+
+model AnalyticsSnapshot {
+  id        String   @id @default(cuid())
+  accountId String
+  platform  Platform
+  fetchedAt DateTime @default(now())
+  metrics   Json     // Flexible metrics storage
+
+  account PlatformAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([fetchedAt])
+}
+
+// ============== Audit Logging ==============
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  userId       String
+  action       String
+  resourceType String
+  resourceId   String
+  beforeState  Json?
+  afterState   Json?
+  ipAddress    String
+  userAgent    String
+  createdAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+
+  // Immutable - no updatedAt, no cascade delete on user
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([resourceType, resourceId])
+}

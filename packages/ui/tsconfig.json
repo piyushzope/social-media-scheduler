@@ -1,0 +1,8 @@
+{
+  "extends": "@social/config-typescript/nextjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"]
+}
