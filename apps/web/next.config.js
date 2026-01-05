@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@social/ui', '@social/shared-types'],
-  experimental: {
-    typedRoutes: true,
-  },
   async rewrites() {
     return [
       {
