@@ -1,6 +1,8 @@
 {
   "extends": "@social/config-typescript/base.json",
   "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "outDir": "./dist",
     "rootDir": "./src"
   },
