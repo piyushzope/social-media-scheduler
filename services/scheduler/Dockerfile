@@ -18,7 +18,7 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o /scheduler ./cmd/scheduler
 
 # Final image
-FROM alpine:3.19
+FROM alpine:3.23
 
 RUN apk add --no-cache ca-certificates tzdata
 
