@@ -8,8 +8,8 @@ on:
 
 env:
   NODE_VERSION: '20'
-  PNPM_VERSION: '8'
-  GO_VERSION: '1.21'
+  PNPM_VERSION: '9'
+  GO_VERSION: '1.22'
 
 jobs:
   # Detect which packages changed
