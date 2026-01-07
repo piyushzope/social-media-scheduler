@@ -28,7 +28,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.set-tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set image tag
         id: set-tag
@@ -124,7 +124,7 @@ jobs:
       name: staging
       url: https://staging.social-scheduler.example.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
@@ -172,7 +172,7 @@ jobs:
       name: production
       url: https://social-scheduler.example.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
