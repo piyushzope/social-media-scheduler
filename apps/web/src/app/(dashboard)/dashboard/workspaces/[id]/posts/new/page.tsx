@@ -92,23 +92,31 @@ export default function NewPostPage() {
   };
 
   const togglePlatform = (accountId: string) => {
-    setPlatformConfigs(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        enabled: !prev[accountId].enabled,
-      },
-    }));
+    setPlatformConfigs(prev => {
+      const existing = prev[accountId];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [accountId]: {
+          ...existing,
+          enabled: !existing.enabled,
+        },
+      };
+    });
   };
 
   const updatePlatformContent = (accountId: string, content: string) => {
-    setPlatformConfigs(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        content,
-      },
-    }));
+    setPlatformConfigs(prev => {
+      const existing = prev[accountId];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [accountId]: {
+          ...existing,
+          content,
+        },
+      };
+    });
   };
 
   const updatePlatformHashtags = (accountId: string, hashtagsStr: string) => {
@@ -117,13 +125,17 @@ export default function NewPostPage() {
       .map(tag => tag.trim())
       .filter(tag => tag.length > 0);
 
-    setPlatformConfigs(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        hashtags,
-      },
-    }));
+    setPlatformConfigs(prev => {
+      const existing = prev[accountId];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [accountId]: {
+          ...existing,
+          hashtags,
+        },
+      };
+    });
   };
 
   const addMediaUrl = () => {
