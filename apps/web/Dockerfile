@@ -2,7 +2,7 @@
 FROM node:20-alpine AS builder
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@8 --activate
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 WORKDIR /app
 
@@ -10,6 +10,8 @@ WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/ui/package.json ./packages/ui/
+COPY packages/config/typescript/package.json ./packages/config/typescript/
+COPY packages/config/eslint/package.json ./packages/config/eslint/
 COPY apps/web/package.json ./apps/web/
 
 # Install dependencies
@@ -18,6 +20,7 @@ RUN pnpm install --frozen-lockfile
 # Copy source files
 COPY packages/shared-types ./packages/shared-types
 COPY packages/ui ./packages/ui
+COPY packages/config ./packages/config
 COPY apps/web ./apps/web
 COPY tsconfig.json ./
 
@@ -33,7 +36,7 @@ RUN pnpm --filter @social/web build
 FROM node:20-alpine AS runner
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@8 --activate
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 WORKDIR /app
 
