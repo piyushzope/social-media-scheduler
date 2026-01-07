@@ -5,12 +5,14 @@ WORKDIR /app
 # Install dependencies
 RUN apk add --no-cache git ca-certificates
 
-# Copy go mod file and download dependencies
+# Copy go mod file
 COPY go.mod ./
-RUN go mod download
 
 # Copy source
 COPY . .
+
+# Generate go.sum and download dependencies
+RUN go mod tidy
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o /scheduler ./cmd/scheduler

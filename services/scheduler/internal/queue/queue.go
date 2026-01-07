@@ -9,7 +9,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/social-scheduler/scheduler/internal/publisher"
+	"github.com/social-scheduler/scheduler/internal/types"
 )
 
 const (
@@ -18,17 +18,9 @@ const (
 	failedPostsKey    = "failed_posts"
 )
 
-type PostJob struct {
-	PostID         string    `json:"post_id"`
-	PlatformConfig string    `json:"platform_config_id"`
-	Platform       string    `json:"platform"`
-	AccountID      string    `json:"account_id"`
-	Content        string    `json:"content"`
-	MediaURLs      []string  `json:"media_urls"`
-	Hashtags       []string  `json:"hashtags"`
-	ScheduledAt    time.Time `json:"scheduled_at"`
-	Priority       int       `json:"priority"` // Higher = more priority (paid tiers)
-	RetryCount     int       `json:"retry_count"`
+// Publisher interface for dependency injection
+type Publisher interface {
+	Publish(ctx context.Context, job *types.PostJob) error
 }
 
 type RedisQueue struct {
@@ -116,7 +108,7 @@ func (q *RedisQueue) fetchAndQueuePosts(ctx context.Context, pool *pgxpool.Pool)
 	defer rows.Close()
 
 	for rows.Next() {
-		var job PostJob
+		var job types.PostJob
 		var mediaURLsJSON, hashtagsJSON []byte
 
 		err := rows.Scan(
@@ -148,7 +140,7 @@ func (q *RedisQueue) fetchAndQueuePosts(ctx context.Context, pool *pgxpool.Pool)
 	return nil
 }
 
-func (q *RedisQueue) EnqueuePost(ctx context.Context, job *PostJob) error {
+func (q *RedisQueue) EnqueuePost(ctx context.Context, job *types.PostJob) error {
 	data, err := json.Marshal(job)
 	if err != nil {
 		return fmt.Errorf("failed to marshal job: %w", err)
@@ -164,7 +156,7 @@ func (q *RedisQueue) EnqueuePost(ctx context.Context, job *PostJob) error {
 }
 
 // ProcessScheduledPosts continuously processes posts from the queue
-func (q *RedisQueue) ProcessScheduledPosts(ctx context.Context, pub *publisher.Publisher) error {
+func (q *RedisQueue) ProcessScheduledPosts(ctx context.Context, pub Publisher) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -185,7 +177,7 @@ func (q *RedisQueue) ProcessScheduledPosts(ctx context.Context, pub *publisher.P
 				continue
 			}
 
-			var job PostJob
+			var job types.PostJob
 			if err := json.Unmarshal([]byte(results[0].Member.(string)), &job); err != nil {
 				fmt.Printf("Failed to unmarshal job: %v\n", err)
 				continue

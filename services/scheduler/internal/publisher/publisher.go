@@ -7,8 +7,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/social-scheduler/scheduler/internal/config"
-	"github.com/social-scheduler/scheduler/internal/queue"
 	"github.com/social-scheduler/scheduler/internal/platforms"
+	"github.com/social-scheduler/scheduler/internal/types"
 )
 
 type Publisher struct {
@@ -31,7 +31,7 @@ func New(cfg *config.Config, logger *zap.SugaredLogger) *Publisher {
 	}
 }
 
-func (p *Publisher) Publish(ctx context.Context, job *queue.PostJob) error {
+func (p *Publisher) Publish(ctx context.Context, job *types.PostJob) error {
 	p.logger.Infof("Publishing post %s to %s", job.PostID, job.Platform)
 
 	var err error

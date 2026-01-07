@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/social-scheduler/scheduler/internal/queue"
+	"github.com/social-scheduler/scheduler/internal/types"
 )
 
 type TikTokClient struct {
@@ -19,7 +19,7 @@ func NewTikTokClient(clientID, clientSecret string) *TikTokClient {
 	}
 }
 
-func (c *TikTokClient) Publish(ctx context.Context, job *queue.PostJob) (string, error) {
+func (c *TikTokClient) Publish(ctx context.Context, job *types.PostJob) (string, error) {
 	if c.clientID == "" || c.clientSecret == "" {
 		return "", errors.New("TikTok API credentials not configured")
 	}

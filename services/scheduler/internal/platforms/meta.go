@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/social-scheduler/scheduler/internal/queue"
+	"github.com/social-scheduler/scheduler/internal/types"
 )
 
 type MetaClient struct {
@@ -19,7 +19,7 @@ func NewMetaClient(clientID, clientSecret string) *MetaClient {
 	}
 }
 
-func (c *MetaClient) Publish(ctx context.Context, job *queue.PostJob) (string, error) {
+func (c *MetaClient) Publish(ctx context.Context, job *types.PostJob) (string, error) {
 	if c.clientID == "" || c.clientSecret == "" {
 		return "", errors.New("Meta API credentials not configured")
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/social-scheduler/scheduler/internal/queue"
+	"github.com/social-scheduler/scheduler/internal/types"
 )
 
 type XClient struct {
@@ -19,7 +19,7 @@ func NewXClient(clientID, clientSecret string) *XClient {
 	}
 }
 
-func (c *XClient) Publish(ctx context.Context, job *queue.PostJob) (string, error) {
+func (c *XClient) Publish(ctx context.Context, job *types.PostJob) (string, error) {
 	if c.clientID == "" || c.clientSecret == "" {
 		return "", errors.New("X API credentials not configured")
 	}

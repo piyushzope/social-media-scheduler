@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/social-scheduler/scheduler/internal/queue"
+	"github.com/social-scheduler/scheduler/internal/types"
 )
 
 type LinkedInClient struct {
@@ -19,7 +19,7 @@ func NewLinkedInClient(clientID, clientSecret string) *LinkedInClient {
 	}
 }
 
-func (c *LinkedInClient) Publish(ctx context.Context, job *queue.PostJob) (string, error) {
+func (c *LinkedInClient) Publish(ctx context.Context, job *types.PostJob) (string, error) {
 	if c.clientID == "" || c.clientSecret == "" {
 		return "", errors.New("LinkedIn API credentials not configured")
 	}
