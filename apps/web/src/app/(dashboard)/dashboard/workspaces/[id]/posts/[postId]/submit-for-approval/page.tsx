@@ -75,8 +75,11 @@ export default function SubmitForApprovalPage({
 
   const updateApprover = (index: number, approverId: string) => {
     const updated = [...approvalSteps];
-    updated[index].approverId = approverId;
-    setApprovalSteps(updated);
+    const step = updated[index];
+    if (step) {
+      step.approverId = approverId;
+      setApprovalSteps(updated);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
