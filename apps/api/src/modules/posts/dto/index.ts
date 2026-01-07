@@ -69,3 +69,6 @@ export class UpdatePostDto {
   @IsString()
   scheduledAt?: string;
 }
+
+export * from './submit-for-approval.dto';
+export * from './approval-action.dto';

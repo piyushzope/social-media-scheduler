@@ -1,0 +1,28 @@
+# Default owners for everything in the repo
+*       @your-org/core-team
+
+# API service
+/apps/api/                      @your-org/backend-team
+
+# Web application
+/apps/web/                      @your-org/frontend-team
+
+# Scheduler service (Go)
+/services/scheduler/            @your-org/backend-team
+
+# Database schema
+/packages/database/             @your-org/backend-team
+
+# Shared packages
+/packages/shared-types/         @your-org/core-team
+/packages/ui/                   @your-org/frontend-team
+
+# Infrastructure
+/infra/                         @your-org/devops-team
+/.github/                       @your-org/devops-team
+/docker-compose*.yml            @your-org/devops-team
+**/Dockerfile                   @your-org/devops-team
+
+# Documentation
+*.md                            @your-org/core-team
+/docs/                          @your-org/core-team

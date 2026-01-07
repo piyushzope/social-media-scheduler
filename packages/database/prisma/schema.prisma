@@ -19,10 +19,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workspaces    WorkspaceMembership[]
-  createdPosts  Post[]               @relation("PostCreator")
-  approvals     ApprovalStep[]
-  auditLogs     AuditLog[]
+  ownedWorkspaces Workspace[]
+  workspaces      WorkspaceMembership[]
+  createdPosts    Post[]                @relation("PostCreator")
+  approvals       ApprovalStep[]
+  auditLogs       AuditLog[]
 
   @@index([email])
 }
@@ -40,6 +41,7 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  owner            User                  @relation(fields: [ownerId], references: [id])
   members          WorkspaceMembership[]
   roles            Role[]
   platformAccounts PlatformAccount[]

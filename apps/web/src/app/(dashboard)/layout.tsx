@@ -28,6 +28,9 @@ export default function DashboardLayout({
           <NavLink href="/dashboard/engagement" icon="message">
             Engagement
           </NavLink>
+          <NavLink href="/dashboard/workspaces" icon="workspace">
+            Workspaces
+          </NavLink>
           <NavLink href="/dashboard/settings" icon="settings">
             Settings
           </NavLink>

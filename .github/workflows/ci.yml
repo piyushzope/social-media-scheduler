@@ -1,0 +1,395 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+  GO_VERSION: '1.21'
+
+jobs:
+  # Detect which packages changed
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      scheduler: ${{ steps.filter.outputs.scheduler }}
+      database: ${{ steps.filter.outputs.database }}
+      packages: ${{ steps.filter.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/database/**'
+              - 'packages/shared-types/**'
+            web:
+              - 'apps/web/**'
+              - 'packages/ui/**'
+              - 'packages/shared-types/**'
+            scheduler:
+              - 'services/scheduler/**'
+            database:
+              - 'packages/database/**'
+            packages:
+              - 'packages/**'
+
+  # Lint and type check
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    needs: changes
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @social/database generate
+
+      - name: Build shared packages
+        run: pnpm --filter @social/shared-types build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check API
+        if: needs.changes.outputs.api == 'true'
+        run: pnpm --filter @social/api typecheck
+
+      - name: Type check Web
+        if: needs.changes.outputs.web == 'true'
+        run: pnpm --filter @social/web typecheck
+
+  # Build API
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    needs: [changes, lint]
+    if: needs.changes.outputs.api == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @social/database generate
+
+      - name: Build shared packages
+        run: pnpm --filter @social/shared-types build
+
+      - name: Build API
+        run: pnpm --filter @social/api build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-build
+          path: apps/api/dist
+          retention-days: 1
+
+  # Build Web
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: [changes, lint]
+    if: needs.changes.outputs.web == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: |
+          pnpm --filter @social/shared-types build
+          pnpm --filter @social/ui build
+
+      - name: Build Web
+        run: pnpm --filter @social/web build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: apps/web/.next
+          retention-days: 1
+
+  # Build Go Scheduler
+  build-scheduler:
+    name: Build Scheduler
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.scheduler == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: services/scheduler/go.sum
+
+      - name: Download dependencies
+        working-directory: services/scheduler
+        run: go mod download
+
+      - name: Build
+        working-directory: services/scheduler
+        run: go build -v -o scheduler ./cmd/scheduler
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduler-build
+          path: services/scheduler/scheduler
+          retention-days: 1
+
+  # Test API
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    needs: [changes, build-api]
+    if: needs.changes.outputs.api == 'true'
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: social_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @social/database generate
+
+      - name: Run database migrations
+        run: pnpm --filter @social/database db:push
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/social_test
+
+      - name: Build shared packages
+        run: pnpm --filter @social/shared-types build
+
+      - name: Run API tests
+        run: pnpm --filter @social/api test
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/social_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-ci
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+
+      - name: Run API e2e tests
+        run: pnpm --filter @social/api test:e2e
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/social_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-ci
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+
+  # Test Go Scheduler
+  test-scheduler:
+    name: Test Scheduler
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.scheduler == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: services/scheduler/go.sum
+
+      - name: Run tests
+        working-directory: services/scheduler
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: services/scheduler/coverage.out
+          flags: scheduler
+          fail_ci_if_error: false
+
+  # Database migrations check
+  db-check:
+    name: Database Check
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.database == 'true'
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: social_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate schema
+        run: pnpm --filter @social/database prisma validate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/social_test
+
+  # Security scan
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run npm audit
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+  # Summary job
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    needs: [lint, build-api, build-web, build-scheduler, test-api, test-scheduler, security]
+    if: always()
+    steps:
+      - name: Check results
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          BUILD_API_RESULT: ${{ needs.build-api.result }}
+          BUILD_WEB_RESULT: ${{ needs.build-web.result }}
+          BUILD_SCHEDULER_RESULT: ${{ needs.build-scheduler.result }}
+          TEST_API_RESULT: ${{ needs.test-api.result }}
+          TEST_SCHEDULER_RESULT: ${{ needs.test-scheduler.result }}
+        run: |
+          if [[ "$LINT_RESULT" == "failure" ]] || \
+             [[ "$BUILD_API_RESULT" == "failure" ]] || \
+             [[ "$BUILD_WEB_RESULT" == "failure" ]] || \
+             [[ "$BUILD_SCHEDULER_RESULT" == "failure" ]] || \
+             [[ "$TEST_API_RESULT" == "failure" ]] || \
+             [[ "$TEST_SCHEDULER_RESULT" == "failure" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All jobs passed!"

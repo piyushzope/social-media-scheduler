@@ -2,17 +2,19 @@ import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard, RequirePermissions, Permission } from '@/common/permissions';
 
 import { AnalyticsService } from './analytics.service';
 
 @ApiTags('analytics')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('workspaces/:workspaceId/analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('summary')
+  @RequirePermissions(Permission.ANALYTICS_VIEW)
   @ApiOperation({ summary: 'Get analytics summary across all platforms' })
   @ApiQuery({ name: 'period', enum: ['day', 'week', 'month'], required: false })
   async getSummary(

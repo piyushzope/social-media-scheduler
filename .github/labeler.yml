@@ -1,0 +1,54 @@
+# Labels based on file paths
+api:
+  - changed-files:
+      - any-glob-to-any-file: 'apps/api/**'
+
+web:
+  - changed-files:
+      - any-glob-to-any-file: 'apps/web/**'
+
+scheduler:
+  - changed-files:
+      - any-glob-to-any-file: 'services/scheduler/**'
+
+database:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/database/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/package.json'
+          - '**/pnpm-lock.yaml'
+          - '**/go.mod'
+          - '**/go.sum'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+infrastructure:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'infra/**'
+          - 'docker-compose*.yml'
+          - '**/Dockerfile'
+          - '.github/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.ts'
+          - '**/*.spec.ts'
+          - '**/*_test.go'
+          - 'test-*.sh'
+
+ui:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/ui/**'
+
+types:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/shared-types/**'
