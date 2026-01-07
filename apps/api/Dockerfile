@@ -17,6 +17,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages ./packages
 COPY . .
+RUN pnpm --filter @social/shared-types build
 RUN pnpm --filter @social/database generate
 RUN pnpm --filter @social/api build
 
