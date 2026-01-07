@@ -72,7 +72,7 @@ jobs:
 
       # API Image
       - name: Build and push API image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         env:
           VERSION: ${{ needs.release.outputs.version }}
         with:
@@ -87,7 +87,7 @@ jobs:
 
       # Web Image
       - name: Build and push Web image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/web/Dockerfile
@@ -100,7 +100,7 @@ jobs:
 
       # Scheduler Image
       - name: Build and push Scheduler image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: services/scheduler
           file: services/scheduler/Dockerfile
