@@ -7,5 +7,6 @@ module.exports = {
     'import/order': 'off',
     '@typescript-eslint/no-unused-vars': 'warn',
     '@typescript-eslint/no-explicit-any': 'off',
+    'no-case-declarations': 'off',
   },
 };
