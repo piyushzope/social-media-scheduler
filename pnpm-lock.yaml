@@ -232,6 +232,9 @@ importers:
       '@social/config-typescript':
         specifier: workspace:*
         version: link:../config/typescript
+      eslint:
+        specifier: ^8.56.0
+        version: 8.57.1
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
