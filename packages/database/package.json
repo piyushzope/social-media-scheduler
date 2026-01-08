@@ -2,9 +2,10 @@
   "name": "@social/database",
   "version": "0.0.0",
   "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
     "generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
@@ -13,10 +14,11 @@
     "studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.0"
+    "@prisma/client": "^5.10.0",
+    "prisma": "^5.22.0"
   },
   "devDependencies": {
-    "prisma": "^5.10.0",
+    "@types/node": "^20.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.0"
   }

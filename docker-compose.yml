@@ -31,49 +31,52 @@ services:
       timeout: 5s
       retries: 5
 
-  # Uncomment to run services in Docker
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: apps/api/Dockerfile
-  #   container_name: social_api
-  #   restart: unless-stopped
-  #   ports:
-  #     - "4000:4000"
-  #   environment:
-  #     - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/social_scheduler
-  #     - REDIS_URL=redis://redis:6379
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: social_api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/social_scheduler
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=dev-secret-change-in-production
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # web:
-  #   build:
-  #     context: .
-  #     dockerfile: apps/web/Dockerfile
-  #   container_name: social_web
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - api
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: social_web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+    depends_on:
+      - api
 
-  # scheduler:
-  #   build:
-  #     context: .
-  #     dockerfile: services/scheduler/Dockerfile
-  #   container_name: social_scheduler
-  #   restart: unless-stopped
-  #   environment:
-  #     - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/social_scheduler
-  #     - REDIS_URL=redis://redis:6379
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
+  scheduler:
+    build:
+      context: ./services/scheduler
+      dockerfile: Dockerfile
+    container_name: social_scheduler_svc
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/social_scheduler
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:
