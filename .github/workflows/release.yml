@@ -45,7 +45,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: CHANGELOG.md
           draft: false
@@ -121,7 +121,7 @@ jobs:
       REPO: ${{ github.repository }}
     steps:
       - name: Add image info to release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           append_body: true
           body: |
